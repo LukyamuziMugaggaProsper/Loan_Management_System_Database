@@ -1,0 +1,160 @@
+Setting environment for using XAMPP for Windows.
+MUGAGGA@DESKTOP-O7LVD6U c:\xampp
+# mysql -u root -p
+Enter password:
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 20
+Server version: 10.4.32-MariaDB mariadb.org binary distribution
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> DROP DATABASE loans_management_system;
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [(none)]> CREATE DATABASE loans_management_system;
+Query OK, 1 row affected (0.002 sec)
+
+MariaDB [(none)]> USE DATABASE loans_management_system;
+ERROR 1049 (42000): Unknown database 'database'
+MariaDB [(none)]> USE loans_management_system;
+Database changed
+MariaDB [loans_management_system]> -- CUSTOMER TABLE
+MariaDB [loans_management_system]> CREATE TABLE Customer (
+    ->     customer_id INT PRIMARY KEY,
+    ->     name VARCHAR(100),
+    ->     phone VARCHAR(15),
+    ->     address VARCHAR(100)
+    -> );
+Query OK, 0 rows affected (0.029 sec)
+
+MariaDB [loans_management_system]>
+MariaDB [loans_management_system]> -- EMPLOYEE TABLE
+MariaDB [loans_management_system]> CREATE TABLE Employee (
+    ->     employee_id INT PRIMARY KEY,
+    ->     name VARCHAR(100),
+    ->     position VARCHAR(50)
+    -> );
+Query OK, 0 rows affected (0.021 sec)
+
+MariaDB [loans_management_system]>
+MariaDB [loans_management_system]> -- LOAN TABLE
+MariaDB [loans_management_system]> CREATE TABLE Loan (
+    ->     loan_id INT PRIMARY KEY,
+    ->     customer_id INT,
+    ->     employee_id INT,
+    ->     loan_amount DECIMAL(12,2),
+    ->     interest_rate DECIMAL(5,2),
+    ->     start_date DATE,
+    ->     due_date DATE,
+    ->
+    ->     FOREIGN KEY (customer_id) REFERENCES Customer(customer_id),
+    ->     FOREIGN KEY (employee_id) REFERENCES Employee(employee_id)
+    -> );
+Query OK, 0 rows affected (0.057 sec)
+
+MariaDB [loans_management_system]>
+MariaDB [loans_management_system]> -- PAYMENT TABLE
+MariaDB [loans_management_system]> CREATE TABLE Payment (
+    ->     payment_id INT PRIMARY KEY,
+    ->     loan_id INT,
+    ->     amount_paid DECIMAL(12,2),
+    ->     payment_date DATE,
+    ->
+    ->     FOREIGN KEY (loan_id) REFERENCES Loan(loan_id)
+    -> );
+Query OK, 0 rows affected (0.048 sec)
+
+MariaDB [loans_management_system]> INSERT INTO Customer (customer_id, name, phone, address) VALUES
+    -> (1, 'Lukyamuzi Mugagga', '0756634543', 'Kampala'),
+    -> (2, 'Mugagga Prosper', '0782456712', 'Mbarara'),
+    -> (3, 'Prosper Athena', '0778345621', 'Mbale'),
+    -> (4, 'Lukyamuzi Athena', '0709123456', 'Gulu'),
+    -> (5, 'Mugagga Athena', '0745567890', 'Arua');
+Query OK, 5 rows affected (0.007 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+MariaDB [loans_management_system]> INSERT INTO Employee VALUES
+    -> (1, 'Mukunzi Andy', 'Loan Officer'),
+    -> (2, 'Andy Kasaana', 'Loan Officer');
+Query OK, 2 rows affected (0.005 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+MariaDB [loans_management_system]> INSERT INTO Loan VALUES
+    -> (1, 1, 1, 5000000.00, 15.00, '2024-01-10', '2024-07-10'),
+    -> (2, 2, 1, 3000000.00, 12.00, '2024-02-01', '2024-08-01'),
+    -> (3, 3, 2, 8000000.00, 18.00, '2024-03-15', '2024-09-15'),
+    -> (4, 4, 1, 2000000.00, 10.00, '2024-04-01', '2024-10-01'),
+    -> (5, 5, 2, 6000000.00, 14.00, '2024-05-20', '2024-11-20');
+Query OK, 5 rows affected (0.007 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+MariaDB [loans_management_system]> INSERT INTO Payment VALUES
+    -> (1, 1, 1000000.00, '2024-02-01'),
+    -> (2, 1, 1500000.00, '2024-03-01'),
+    -> (3, 2, 1000000.00, '2024-03-15'),
+    -> (4, 3, 2000000.00, '2024-04-10'),
+    -> (5, 4, 500000.00, '2024-05-01');
+Query OK, 5 rows affected (0.006 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+MariaDB [loans_management_system]>MariaDB [(none)]> USE loans_management_system;
+Database changed
+MariaDB [loans_management_system]> SELECT
+    ->     l.loan_id,
+    ->     c.name AS customer_name,
+    ->     e.name AS loan_officer,
+    ->     l.loan_amount,
+    ->     l.interest_rate,
+    ->     l.start_date,
+    ->     l.due_date,
+    ->     COALESCE(SUM(p.amount_paid), 0) AS total_paid,
+    ->     (l.loan_amount - COALESCE(SUM(p.amount_paid), 0)) AS outstanding_balance
+    -> FROM Loan l
+    -> JOIN Customer c ON l.customer_id = c.customer_id
+    -> JOIN Employee e ON l.employee_id = e.employee_id
+    -> LEFT JOIN Payment p ON l.loan_id = p.loan_id
+    -> GROUP BY l.loan_id, c.name, e.name, l.loan_amount, l.interest_rate, l.start_date, l.due_date
+    -> ORDER BY outstanding_balance DESC;
++---------+-------------------+--------------+-------------+---------------+------------+------------+------------+---------------------+
+| loan_id | customer_name     | loan_officer | loan_amount | interest_rate | start_date | due_date   | total_paid | outstanding_balance |
++---------+-------------------+--------------+-------------+---------------+------------+------------+------------+---------------------+
+|       3 | Prosper Athena    | Andy Kasaana |  8000000.00 |         18.00 | 2024-03-15 | 2024-09-15 | 2000000.00 |     6000000.00 |
+|       5 | Mugagga Athena    | Andy Kasaana |  6000000.00 |         14.00 | 2024-05-20 | 2024-11-20 |       0.00 |     6000000.00 |
+|       1 | Lukyamuzi Mugagga | Mukunzi Andy |  5000000.00 |         15.00 | 2024-01-10 | 2024-07-10 | 2500000.00 |     2500000.00 |
+|       2 | Mugagga Prosper   | Mukunzi Andy |  3000000.00 |         12.00 | 2024-02-01 | 2024-08-01 | 1000000.00 |     2000000.00 |
+|       4 | Lukyamuzi Athena  | Mukunzi Andy |  2000000.00 |         10.00 | 2024-04-01 | 2024-10-01 |  500000.00 |     1500000.00 |
++---------+-------------------+--------------+-------------+---------------+------------+------------+------------+---------------------+
+5 rows in set (0.138 sec)
+
+MariaDB [loans_management_system]> SELECT
+    ->     l.loan_id,
+    ->     c.name AS customer_name,
+    ->     c.phone,
+    ->     e.name AS loan_officer,
+    ->     l.loan_amount,
+    ->     l.due_date,
+    ->     COALESCE(SUM(p.amount_paid), 0) AS total_paid,
+    ->     (l.loan_amount - COALESCE(SUM(p.amount_paid), 0)) AS amount_overdue,
+    ->     DATEDIFF(CURDATE(), l.due_date) AS days_overdue
+    -> FROM Loan l
+    -> JOIN Customer c ON l.customer_id = c.customer_id
+    -> JOIN Employee e ON l.employee_id = e.employee_id
+    -> LEFT JOIN Payment p ON l.loan_id = p.loan_id
+    -> GROUP BY l.loan_id, c.name, c.phone, e.name, l.loan_amount, l.due_date
+    -> HAVING amount_overdue > 0 AND l.due_date < CURDATE()
+    -> ORDER BY days_overdue DESC;
++---------+-------------------+------------+--------------+-------------+------------+------------+----------------+--------------+
+| loan_id | customer_name     | phone      | loan_officer | loan_amount | due_date   | total_paid | amount_overdue | days_overdue |
++---------+-------------------+------------+--------------+-------------+------------+------------+----------------+--------------+
+|       1 | Lukyamuzi Mugagga | 0756634543 | Mukunzi Andy |  5000000.00 | 2024-07-10 | 2500000.00 |     2500000.00 |      666 |
+|       2 | Mugagga Prosper   | 0782456712 | Mukunzi Andy |  3000000.00 | 2024-08-01 | 1000000.00 |     2000000.00 |      644 |
+|       3 | Prosper Athena    | 0778345621 | Andy Kasaana |  8000000.00 | 2024-09-15 | 2000000.00 |     6000000.00 |      599 |
+|       4 | Lukyamuzi Athena  | 0709123456 | Mukunzi Andy |  2000000.00 | 2024-10-01 |  500000.00 |     1500000.00 |      583 |
+|       5 | Mugagga Athena    | 0745567890 | Andy Kasaana |  6000000.00 | 2024-11-20 |       0.00 |     6000000.00 |      533 |
++---------+-------------------+------------+--------------+-------------+------------+------------+----------------+--------------+
+5 rows in set (0.108 sec)
+
+MariaDB [loans_management_system]>
+
